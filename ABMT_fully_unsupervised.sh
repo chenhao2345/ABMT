@@ -1,3 +1,5 @@
+#!/bin/sh
+
 TARGET=$1
 ARCH=$2
 
