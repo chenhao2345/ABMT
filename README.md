@@ -6,7 +6,7 @@ This implementation is based on [MMT (ICLR 2020)](https://github.com/yxgeee/MMT)
 ## Installation
 
 ```shell
-git clone https://https://github.com/chenhao2345/ABMT
+git clone https://github.com/chenhao2345/ABMT
 cd ABMT
 python setup.py install
 ```
