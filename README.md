@@ -1,4 +1,4 @@
-# Spatial-Channel Partition Network
+# ABMT
 Implement of paper:[Enhancing Diversity in Teacher-Student Networks via Asymmetric branches for Unsupervised Person Re-identification (WACV 2021)](https://arxiv.org/abs/2011.13776).
 
 This implementation is based on [MMT (ICLR 2020)](https://github.com/yxgeee/MMT).
