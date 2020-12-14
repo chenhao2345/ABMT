@@ -45,16 +45,30 @@ Transferring from [DukeMTMC-reID](https://arxiv.org/abs/1609.01775) to [Market-1
 #### Stage I: Pre-training on the source domain
 
 ```shell
-sh ABMT_source_pretrain.sh dukemtmc market1501 resnet50_AB 
+sh ABMT_source_pretrain.sh dukemtmc-reid market1501 resnet50_AB 
 ```
 
 #### Stage II: End-to-end training with ABMT 
 
 ```shell
-sh ABMT_target_adaptation.sh dukemtmc market1501 resnet50_AB
+sh ABMT_target_adaptation.sh dukemtmc-reid market1501 resnet50_AB
 ```
 
 ## Example #2:
+Transferring from [DukeMTMC-reID](https://arxiv.org/abs/1609.01775) to [Market-1501](https://www.cv-foundation.org/openaccess/content_iccv_2015/papers/Zheng_Scalable_Person_Re-Identification_ICCV_2015_paper.pdf) on the backbone of [IBN-ResNet-50](https://arxiv.org/abs/1807.09441), *i.e. Duke-to-Market (IBN-ResNet-50)*.
+#### Stage I: Pre-training on the source domain
+
+```shell
+sh ABMT_source_pretrain.sh dukemtmc-reid market1501 resnet_ibn50a_AB
+```
+
+#### Stage II: End-to-end training with ABMT 
+
+```shell
+sh ABMT_target_adaptation.sh dukemtmc-reid market1501 resnet_ibn50a_AB
+```
+
+## Example #3:
 Fully unsupervised learning on [Market-1501](https://www.cv-foundation.org/openaccess/content_iccv_2015/papers/Zheng_Scalable_Person_Re-Identification_ICCV_2015_paper.pdf) on the backbone of [ResNet-50](https://arxiv.org/abs/1512.03385).
 
 #### End-to-end training with ABMT
