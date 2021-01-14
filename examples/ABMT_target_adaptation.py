@@ -151,17 +151,15 @@ def main_worker(args):
         dict_f, _ = extract_features(model_1_ema, cluster_loader, print_freq=50)
         cf_1 = torch.stack(list(dict_f.values()))
 
-        if not args.no_source:
-            cluster_loader_source = get_test_loader(dataset_source, args.height, args.width, args.batch_size, args.workers,
-                                                testset=dataset_source.train)
-            dict_f_source, _ = extract_features(model_1_ema, cluster_loader_source, print_freq=50)
-            cf_1_source = torch.stack(list(dict_f_source.values()))
-
         # DBSCAN cluster
         if args.no_source:
             rerank_dist = compute_jaccard_dist(cf_1, lambda_value=0, source_features=None,
                                                use_gpu=False).numpy()
         else:
+            cluster_loader_source = get_test_loader(dataset_source, args.height, args.width, args.batch_size,
+                                                    args.workers, testset=dataset_source.train)
+            dict_f_source, _ = extract_features(model_1_ema, cluster_loader_source, print_freq=50)
+            cf_1_source = torch.stack(list(dict_f_source.values()))
             rerank_dist = compute_jaccard_dist(cf_1, lambda_value=args.lambda_value, source_features=cf_1_source,
                                                use_gpu=False).numpy()
         tri_mat = np.triu(rerank_dist, 1)  # tri_mat.dim=2
@@ -192,36 +190,21 @@ def main_worker(args):
         centers = np.stack(centers, axis=0)
         # print(centers.shape)
 
-        if args.features == 0:
-            model_1.module.classifier = nn.Linear(2048, num_ids, bias=False).cuda()
-            model_1_ema.module.classifier = nn.Linear(2048, num_ids, bias=False).cuda()
-            model_1.module.classifier_max = nn.Linear(2048, num_ids, bias=False).cuda()
-            model_1_ema.module.classifier_max = nn.Linear(2048, num_ids, bias=False).cuda()
+        model_1.module.classifier = nn.Linear(2048, num_ids, bias=False).cuda()
+        model_1_ema.module.classifier = nn.Linear(2048, num_ids, bias=False).cuda()
+        model_1.module.classifier_max = nn.Linear(2048, num_ids, bias=False).cuda()
+        model_1_ema.module.classifier_max = nn.Linear(2048, num_ids, bias=False).cuda()
 
-            model_1.module.classifier.weight.data.copy_(
-                torch.from_numpy(normalize(centers[:, :2048], axis=1)).float().cuda())
-            model_1_ema.module.classifier.weight.data.copy_(
-                torch.from_numpy(normalize(centers[:, :2048], axis=1)).float().cuda())
+        model_1.module.classifier.weight.data.copy_(
+            torch.from_numpy(normalize(centers[:, :2048], axis=1)).float().cuda())
+        model_1_ema.module.classifier.weight.data.copy_(
+            torch.from_numpy(normalize(centers[:, :2048], axis=1)).float().cuda())
 
-            model_1.module.classifier_max.weight.data.copy_(
-                torch.from_numpy(normalize(centers[:, 2048:], axis=1)).float().cuda())
-            model_1_ema.module.classifier_max.weight.data.copy_(
-                torch.from_numpy(normalize(centers[:, 2048:], axis=1)).float().cuda())
-        else:
-            model_1.module.classifier = nn.Linear(1024, num_ids, bias=False).cuda()
-            model_1_ema.module.classifier = nn.Linear(1024, num_ids, bias=False).cuda()
-            model_1.module.classifier_max = nn.Linear(1024, num_ids, bias=False).cuda()
-            model_1_ema.module.classifier_max = nn.Linear(1024, num_ids, bias=False).cuda()
+        model_1.module.classifier_max.weight.data.copy_(
+            torch.from_numpy(normalize(centers[:, 2048:], axis=1)).float().cuda())
+        model_1_ema.module.classifier_max.weight.data.copy_(
+            torch.from_numpy(normalize(centers[:, 2048:], axis=1)).float().cuda())
 
-            model_1.module.classifier.weight.data.copy_(
-                torch.from_numpy(normalize(centers[:, :1024], axis=1)).float().cuda())
-            model_1_ema.module.classifier.weight.data.copy_(
-                torch.from_numpy(normalize(centers[:, :1024], axis=1)).float().cuda())
-
-            model_1.module.classifier_max.weight.data.copy_(
-                torch.from_numpy(normalize(centers[:, 1024:], axis=1)).float().cuda())
-            model_1_ema.module.classifier_max.weight.data.copy_(
-                torch.from_numpy(normalize(centers[:, 1024:], axis=1)).float().cuda())
 
         target_label = labels
 
@@ -252,11 +235,12 @@ def main_worker(args):
         trainer.train(epoch, labeled_loader_target, optimizer,
                     print_freq=args.print_freq, train_iters=len(labeled_loader_target))
 
-        def save_model(model_ema, is_best, best_mAP, mid):
+        def save_model(model_ema, is_best, best_mAP, mid, num_ids):
             save_checkpoint({
                 'state_dict': model_ema.state_dict(),
                 'epoch': epoch + 1,
                 'best_mAP': best_mAP,
+                'num_ids': num_ids
             }, is_best, fpath=osp.join(args.logs_dir, 'model'+str(mid)+'_checkpoint.pth.tar'))
 
         if ((epoch+1)%args.eval_step==0 or (epoch==args.epochs-1)):
@@ -265,12 +249,16 @@ def main_worker(args):
             is_best = (mAP_1>best_mAP)
             best_mAP = max(mAP_1, best_mAP)
 
-            save_model(model_1_ema, is_best, best_mAP, 1)
+            save_model(model_1_ema, is_best, best_mAP, 1, num_ids)
             dataset_target.train = ori_train
     print ('Test on the best model.')
     checkpoint = load_checkpoint(osp.join(args.logs_dir, 'model_best.pth.tar'))
-    model_1_ema.load_state_dict(checkpoint['state_dict'])
-    evaluator_1_ema.evaluate(test_loader_target, dataset_target.query, dataset_target.gallery, cmc_flag=True)
+    model_best = models.create(args.arch, num_features=args.features, dropout=args.dropout, num_classes=checkpoint['num_ids'])
+    model_best.cuda()
+    model_best = nn.DataParallel(model_best)
+    evaluator_best = Evaluator(model_best)
+    model_best.load_state_dict(checkpoint['state_dict'])
+    evaluator_best.evaluate(test_loader_target, dataset_target.query, dataset_target.gallery, cmc_flag=True)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="ABMT Training")
