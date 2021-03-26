@@ -162,6 +162,7 @@ def main_worker(args):
             cf_1_source = torch.stack(list(dict_f_source.values()))
             rerank_dist = compute_jaccard_dist(cf_1, lambda_value=args.lambda_value, source_features=cf_1_source,
                                                use_gpu=False).numpy()
+            del cf_1_source
         tri_mat = np.triu(rerank_dist, 1)  # tri_mat.dim=2
         tri_mat = tri_mat[np.nonzero(tri_mat)]  # tri_mat.dim=1
         tri_mat = np.sort(tri_mat, axis=None)
@@ -188,7 +189,8 @@ def main_worker(args):
         for id in range(num_ids):
             centers.append(np.mean(cf_1[labels == id], axis=0))
         centers = np.stack(centers, axis=0)
-        # print(centers.shape)
+
+        del cf_1, rerank_dist
 
         model_1.module.classifier = nn.Linear(2048, num_ids, bias=False).cuda()
         model_1_ema.module.classifier = nn.Linear(2048, num_ids, bias=False).cuda()
@@ -205,6 +207,7 @@ def main_worker(args):
         model_1_ema.module.classifier_max.weight.data.copy_(
             torch.from_numpy(normalize(centers[:, 2048:], axis=1)).float().cuda())
 
+        del centers
 
         target_label = labels
 
