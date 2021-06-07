@@ -1,7 +1,7 @@
 # ABMT
 Implement of paper:[Enhancing Diversity in Teacher-Student Networks via Asymmetric branches for Unsupervised Person Re-identification (WACV 2021)](https://arxiv.org/abs/2011.13776).
 
-This implementation is based on [MMT (ICLR 2020)](https://github.com/yxgeee/MMT).
+[[Video](https://drive.google.com/file/d/1QoiLRU8YylpRI4S5couYjeHIZz6f2aPN/view?usp=sharing)]
 
 ## Installation
 
@@ -83,6 +83,9 @@ sh ABMT_fully_unsupervised.sh market1501 resnet50_AB
 
 #### Fully Unsupervised Results
 ![fully unsupervised results](figs/fully_unsupervised_results.png)
+
+## Acknowledgment
+This implementation is based on [MMT (ICLR 2020)](https://github.com/yxgeee/MMT).
 
 ## Citation
 
