@@ -1,5 +1,5 @@
 # ABMT
-Implement of paper:[Enhancing Diversity in Teacher-Student Networks via Asymmetric branches for Unsupervised Person Re-identification (WACV 2021)](https://arxiv.org/abs/2011.13776).
+This is the official PyTorch implementation of the WACV 2021 paper:[Enhancing Diversity in Teacher-Student Networks via Asymmetric branches for Unsupervised Person Re-identification (WACV 2021)](https://arxiv.org/abs/2011.13776).
 
 [[Video](https://drive.google.com/file/d/1QoiLRU8YylpRI4S5couYjeHIZz6f2aPN/view?usp=sharing)]
 
